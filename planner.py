@@ -1,11 +1,12 @@
 import sys
-from collections import deque
+import heapq
 
 class State:
-    def __init__(self, position, dirty_set, path):
+    def __init__(self, position, dirty_set, path, cost = None):
         self.position = position #current position
         self.dirty_set = dirty_set #dirty cells left
         self.path = path #past path
+        self.cost = cost
 
     def __eq__(self, other):
         if self.position == other.position and self.dirty_set==other.dirty_set:
@@ -14,6 +15,9 @@ class State:
     
     def __hash__(self):
         return hash((self.position, frozenset(self.dirty_set)))
+    
+    def __lt__(self, other):
+        return self.cost<other.cost
 
 
 
@@ -26,7 +30,7 @@ def read_world(fileName):
     temp_world_arr = []
     world_arr = []
     with open(fileName, "r") as file:
-        for line in file:
+        for line in file:   
             temp_world_arr.append(line.strip())
     cols = temp_world_arr[0]
     rows = temp_world_arr[1]
@@ -63,12 +67,13 @@ def main():
             elif c == START_CELL:
                 start_pos = (x1, y1)
     
-    print(f"start: {start_pos} dirty: {dirty_pos}")
 
+    start_state = State(start_pos, dirty_pos, [])
+    start_state_pq = State(start_pos, dirty_pos, [], 0)
 
     if arg1 == "depth-first": #dfs
         visited = set()
-        stack = [State(start_pos, dirty_pos, [])]
+        stack = [start_state]
         
         
         while stack:
@@ -122,7 +127,72 @@ def main():
 
 
     elif arg1 == "uniform-cost":
-        print("coming")
+        
+        visited = {} #dictionary with state and cost
+        pq = []
+        heapq.heappush(pq, (0, start_state_pq)) #starting state has 0 cost
+      
+        
+        while pq:
+            cost, current = heapq.heappop(pq)
+
+            curr_pos = current.position
+            x = curr_pos[0]
+            y = curr_pos[1]
+            dirty_set = current.dirty_set
+            path = current.path
+
+            if (current.position, frozenset(current.dirty_set)) in visited: #can't use state to check like in prev bc path will be diff
+                #check if current path would be cheaper
+                if cost < visited[(current.position, frozenset(current.dirty_set))]:
+                    visited[(current.position, frozenset(current.dirty_set))] = cost
+                else: continue
+            
+            else:
+                exp_nodes += 1
+                visited[(current.position, frozenset(current.dirty_set))] = cost
+
+            if len(dirty_set) == 0: #done cleaning
+                for a in path:
+                    print(a)
+                print(f"{gen_nodes} nodes generated")
+                print(f"{exp_nodes} nodes expanded")
+                return
+
+            #if dirty, clean and continue so next iteration will clean
+            if curr_pos in dirty_set:
+                gen_nodes += 1
+                new_dirty_set = dirty_set.copy()
+                new_dirty_set.remove(curr_pos)
+                heapq.heappush(pq, (0, State(curr_pos, new_dirty_set, path + ["V"], 0)))
+                continue
+
+
+            #adding n, s, w, e moves
+            if 0 <= x-1 < rows and world[x-1][y] != BLKD_CELL: 
+                gen_nodes += 1
+                heapq.heappush(pq, (cost + 1, State((x-1, y), dirty_set, path + ["N"], cost+1)))
+
+            if 0 <= x+1 < rows and world[x+1][y] != BLKD_CELL:
+                gen_nodes += 1
+                heapq.heappush(pq, (cost + 1, State((x+1, y), dirty_set, path + ["S"], cost+1)))
+
+            if 0 <= y-1 < cols and world[x][y-1] != BLKD_CELL:
+                gen_nodes += 1
+                heapq.heappush(pq, (cost + 1, State((x, y-1), dirty_set, path + ["W"], cost+1)))
+     
+  
+            if 0 <= y+1 < cols and world[x][y+1] != BLKD_CELL:
+                gen_nodes += 1
+                heapq.heappush(pq, (cost + 1, State((x, y+1), dirty_set, path + ["E"], cost+1)))
+
+
+        
+
+
+
+ 
+
 
 
 
