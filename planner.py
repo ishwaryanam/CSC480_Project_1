@@ -1,4 +1,5 @@
 import sys
+from collections import deque
 
 class State:
     def __init__(self, position, dirty_set, path):
@@ -6,7 +7,15 @@ class State:
         self.dirty_set = dirty_set #dirty cells left
         self.path = path #past path
 
+    def __eq__(self, other):
+        if self.position == other.position and self.dirty_set==other.dirty_set:
+            return True
+        return False
     
+    def __hash__(self):
+        return hash((self.position, frozenset(self.dirty_set)))
+
+
 
 EMPTY_CELL = "-"
 BLKD_CELL = "#"
@@ -22,7 +31,6 @@ def read_world(fileName):
     cols = temp_world_arr[0]
     rows = temp_world_arr[1]
     world = temp_world_arr[2:]      
-    
  
     for i in world:
         world_arr.append(list(i))
@@ -32,100 +40,90 @@ def read_world(fileName):
 def main():
     arg1 = sys.argv[1]
     fileName = sys.argv[2]
-    print(arg1)
-    print(fileName)
+ 
 
-    cols, rows, world = read_world(fileName) #parsing through world file
+    #parse world file
+    cols, rows, world = read_world(fileName) 
+    cols = int(cols)
+    rows = int(rows)
+
+
     gen_nodes = 0
     exp_nodes = 0
     start_pos = None #starting pos
     dirty_pos = set() #locations of all dirt spots
-    visited = set()
 
-    stack = [State(start_pos, dirty_pos, [])]
 
     #getting positions of start and dirty cells
-    for x, row in enumerate(world):
-        for y, c in enumerate(row):
+    for x1, row in enumerate(world):
+        for y1, c in enumerate(row):
             if c == DIRTY_CELL:
-                dirty_pos.add((x,y))
+                dirty_pos.add((x1,y1))
 
             elif c == START_CELL:
-                start_pos = (x, y)
+                start_pos = (x1, y1)
     
-    while stack:
-        exp_nodes += 1
-        current = stack.pop()
+    print(f"start: {start_pos} dirty: {dirty_pos}")
 
 
-        curr_pos = current.position
-        x, y = curr_pos
-        dirty_set = current.dirty_set
-        path = current.path
-
-        if curr_pos in visited: #check/updated visited
-            continue
-        else: 
-            visited.add(curr_pos)
-
-        if dirty_set is None: #done cleaning
-            print(path)
-            print(f"{gen_nodes} nodes generated")
-            print(f"{exp_nodes} nodes expanded")
-            return
+    if arg1 == "depth-first": #dfs
+        visited = set()
+        stack = [State(start_pos, dirty_pos, [])]
         
         
+        while stack:
+            current = stack.pop()
+            curr_pos = current.position
+            x = curr_pos[0]
+            y = curr_pos[1]
+            dirty_set = current.dirty_set
+            path = current.path
 
-        #CLEAN IF NEEDED
+            #check/update visited
+            if current in visited: 
+                continue
+            else: 
+                exp_nodes += 1
+                visited.add(current)
 
-
-        if 0 <= y-1 < cols and world[y+1][x] != BLKD_CELL: 
-            gen_node += 1
-            path.append("N")
-            stack.push(State((x, y+1), dirty_set, path))
-        elif 0 <= y+1 < cols:
-            gen_node += 1
-            path.append("S")
-            stack.push(State((x, y-1), dirty_set, path))
-        elif 0 <= x-1 < rows:
-            gen_node += 1
-            path.append("W")
-            stack.push(State((x-1, y), dirty_set, path))
-        elif 0 <= x+1 < rows:
-            gen_node += 1
-            path.append("E")
-            stack.push(State((x+1, y), dirty_set, path))
-        
-
-
-
-
-
-        north_move = (x, y+1)
-        south_move = (x, y-1)
-        west_move = (x-1, y)
-        east_move = (x+1, y)
-
-
-
-
-
+            if len(dirty_set) == 0: #done cleaning
+                for a in path:
+                    print(a)
+                print(f"{gen_nodes} nodes generated")
+                print(f"{exp_nodes} nodes expanded")
+                return
             
 
+            #if dirty, clean and continue so next iteration will clean
+            if curr_pos in dirty_set:
+                gen_nodes += 1
+                new_dirty_set = dirty_set.copy()
+                new_dirty_set.remove(curr_pos)
+                stack.append(State(curr_pos, new_dirty_set, path + ["V"]))
+                continue
 
 
-    print("in mainnn")
-    print(world)
-    if arg1 == "uniform-cost":
-        print("hold")
+            #adding n, s, w, e moves
+            if 0 <= x-1 < rows and world[x-1][y] != BLKD_CELL: 
+                gen_nodes += 1
+                stack.append(State((x-1, y), dirty_set, path + ["N"]))
 
-    elif arg1 == "depth-first":
-        print("hold")
+            if 0 <= x+1 < rows and world[x+1][y] != BLKD_CELL:
+                gen_nodes += 1
+                stack.append(State((x+1, y), dirty_set, path + ["S"]))
 
-    else:
-        print("invalid algorithm type, please choose uniform-cost or depth-first")
-        exit()
+            if 0 <= y-1 < cols and world[x][y-1] != BLKD_CELL:
+                gen_nodes += 1
+                stack.append(State((x, y-1), dirty_set, path + ["W"]))
 
-    read_world(fileName)
+            if 0 <= y+1 < cols and world[x][y+1] != BLKD_CELL:
+                gen_nodes += 1
+                stack.append(State((x, y+1), dirty_set, path + ["E"]))
+
+
+    elif arg1 == "uniform-cost":
+        print("coming")
+
+
 
 main()
