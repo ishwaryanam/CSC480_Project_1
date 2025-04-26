@@ -77,10 +77,7 @@ def main():
         
         
         while stack:
-        
-            
             current = stack.pop()
-            
             curr_pos = current.position
             x = curr_pos[0]
             y = curr_pos[1]
@@ -130,19 +127,14 @@ def main():
         print("no path")
 
     elif arg1 == "uniform-cost":
-        
-        #visited = {} #dictionary with state and cost
         visited = set()
         pq = []
         heapq.heappush(pq, (0, start_state_pq)) #starting state has 0 cost
       
         
         while pq:
-        
             cost, current = heapq.heappop(pq)
-
             curr_pos = current.position
-            
             
             x = curr_pos[0]
             y = curr_pos[1]
@@ -191,15 +183,6 @@ def main():
                 heapq.heappush(pq, (cost + 1, State((x, y+1), dirty_set, path + ["E"], cost+1)))
         
         print("no path")
-
-
-        
-
-
-
- 
-
-
 
 
 main()
