@@ -77,7 +77,10 @@ def main():
         
         
         while stack:
+        
+            
             current = stack.pop()
+            
             curr_pos = current.position
             x = curr_pos[0]
             y = curr_pos[1]
@@ -124,33 +127,34 @@ def main():
             if 0 <= y+1 < cols and world[x][y+1] != BLKD_CELL:
                 gen_nodes += 1
                 stack.append(State((x, y+1), dirty_set, path + ["E"]))
-
+        print("no path")
 
     elif arg1 == "uniform-cost":
         
-        visited = {} #dictionary with state and cost
+        #visited = {} #dictionary with state and cost
+        visited = set()
         pq = []
         heapq.heappush(pq, (0, start_state_pq)) #starting state has 0 cost
       
         
         while pq:
+        
             cost, current = heapq.heappop(pq)
 
             curr_pos = current.position
+            
+            
             x = curr_pos[0]
             y = curr_pos[1]
             dirty_set = current.dirty_set
             path = current.path
 
-            if (current.position, frozenset(current.dirty_set)) in visited: #can't use state to check like in prev bc path will be diff
-                #check if current path would be cheaper
-                if cost < visited[(current.position, frozenset(current.dirty_set))]:
-                    visited[(current.position, frozenset(current.dirty_set))] = cost
-                else: continue
-            
-            else:
+
+            if current in visited: 
+                continue
+            else: 
                 exp_nodes += 1
-                visited[(current.position, frozenset(current.dirty_set))] = cost
+                visited.add(current)
 
             if len(dirty_set) == 0: #done cleaning
                 for a in path:
@@ -185,6 +189,8 @@ def main():
             if 0 <= y+1 < cols and world[x][y+1] != BLKD_CELL:
                 gen_nodes += 1
                 heapq.heappush(pq, (cost + 1, State((x, y+1), dirty_set, path + ["E"], cost+1)))
+        
+        print("no path")
 
 
         
